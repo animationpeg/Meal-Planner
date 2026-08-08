@@ -15,7 +15,7 @@ namespace Plannit.Models
         /// The date of the start of the week for this meal plan
         /// </summary>
         [Required]
-        public DateOnly StartingWeek { get; set; }
+        public DateOnly WeekStarting { get; set; }
 
         /// <summary>
         /// The collection of recipes
