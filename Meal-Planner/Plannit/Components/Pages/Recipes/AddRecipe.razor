@@ -1,0 +1,163 @@
+﻿@page "/recipes/add"
+@inject RecipeService RecipeService
+@inject NavigationManager NavigationManager
+
+<MudText Typo="Typo.h4" Class="mb-4">Add Recipe</MudText>
+
+<EditForm Model="_recipe" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+
+    <MudCard>
+        <MudCardContent>
+            <MudText Typo="Typo.h6" Class="mb-2">Basic Details</MudText>
+
+            <MudTextField @bind-Value="_recipe.Name"
+                          Label="Recipe Name"
+                          For="@(() => _recipe.Name)"
+                          Required="true"
+                          Class="mb-3" />
+
+            <MudTextField @bind-Value="_recipe.Description"
+                          Label="Description"
+                          For="@(() => _recipe.Description)"
+                          Lines="3"
+                          Class="mb-3" />
+
+            <MudNumericField @bind-Value="_recipe.Servings"
+                             Label="Servings"
+                             For="@(() => _recipe.Servings)"
+                             Min="1"
+                             Class="mb-3" />
+        </MudCardContent>
+    </MudCard>
+
+    <MudCard Class="mt-4">
+        <MudCardContent>
+            <MudText Typo="Typo.h6" Class="mb-2">Ingredients</MudText>
+
+            @foreach (Ingredient ingredient in _recipe.Ingredients)
+            {
+                <MudGrid Class="mb-2">
+                    <MudItem xs="4">
+                        <MudTextField @bind-Value="ingredient.Name"
+                                      Label="Ingredient"
+                                      Required="true" />
+                    </MudItem>
+                    <MudItem xs="3">
+                        <MudNumericField T="decimal?"
+                                         @bind-Value="ingredient.Quantity"
+                                         Label="Quantity"
+                                         Min="0.01m" />
+                    </MudItem>
+                    <MudItem xs="3">
+                        <MudSelect @bind-Value="ingredient.Unit" Label="Unit">
+                            @foreach (UnitMeasurement unit in Enum.GetValues<UnitMeasurement>())
+                            {
+                                <MudSelectItem Value="unit">@unit.ToString()</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="2" Class="d-flex align-center">
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="@(() => RemoveIngredient(ingredient))" />
+                    </MudItem>
+                </MudGrid>
+            }
+
+            <MudButton StartIcon="@Icons.Material.Filled.Add"
+                       Variant="Variant.Text"
+                       Color="Color.Primary"
+                       OnClick="AddIngredient"
+                       Class="mt-2">
+                Add Ingredient
+            </MudButton>
+        </MudCardContent>
+    </MudCard>
+
+    <MudCard Class="mt-4">
+        <MudCardContent>
+            <MudText Typo="Typo.h6" Class="mb-2">Method</MudText>
+
+            @foreach (MethodStep step in _recipe.MethodSteps)
+            {
+                <MudGrid Class="mb-2">
+                    <MudItem xs="1" Class="d-flex align-center">
+                        <MudText Typo="Typo.h6">@step.StepNumber</MudText>
+                    </MudItem>
+                    <MudItem xs="9">
+                        <MudTextField @bind-Value="step.Instruction"
+                                      Label="@($"Step {step.StepNumber}")"
+                                      Required="true"
+                                      Lines="2" />
+                    </MudItem>
+                    <MudItem xs="2" Class="d-flex align-center">
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="@(() => RemoveStep(step))" />
+                    </MudItem>
+                </MudGrid>
+            }
+
+            <MudButton StartIcon="@Icons.Material.Filled.Add"
+                       Variant="Variant.Text"
+                       Color="Color.Primary"
+                       OnClick="AddStep"
+                       Class="mt-2">
+                Add Step
+            </MudButton>
+        </MudCardContent>
+    </MudCard>
+
+    <MudStack Row="true" Class="mt-4">
+        <MudButton ButtonType="ButtonType.Submit"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary">
+            Save Recipe
+        </MudButton>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   OnClick="Cancel">
+            Cancel
+        </MudButton>
+    </MudStack>
+</EditForm>
+
+@code {
+    private Recipe _recipe = new Recipe
+    {
+        Ingredients = new List<Ingredient>(),
+        MethodSteps = new List<MethodStep>()
+    };
+
+    private void AddIngredient()
+    {
+        RecipeService.AddIngredient(_recipe);
+    }
+
+    private void RemoveIngredient(Ingredient ingredient)
+    {
+        RecipeService.RemoveIngredient(_recipe, ingredient);
+    }
+
+    private void AddStep()
+    {
+        RecipeService.AddStep(_recipe);
+    }
+
+    private void RemoveStep(MethodStep step)
+    {
+        RecipeService.RemoveStep(_recipe, step);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await RecipeService.AddRecipeAsync(_recipe);
+        NavigationManager.NavigateTo("/recipes");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/recipes");
+    }
+}

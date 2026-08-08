@@ -6,19 +6,31 @@ namespace Plannit.Data
     /// <summary>
     /// Application Db Context - for EF building
     /// </summary>
-    public class AppDbContext : DbContext
+    /// <remarks>
+    /// Constructor
+    /// </remarks>
+    public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
     {
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-        {
-        }
 
+        /// <summary>
+        /// The Recipes table in the database
+        /// </summary>
         public DbSet<Recipe> Recipes { get; set; }
+        /// <summary>
+        /// The Ingredients table in the database
+        /// </summary>
         public DbSet<Ingredient> Ingredients { get; set; }
+        /// <summary>
+        /// The MethodSteps table in the database
+        /// </summary>
         public DbSet<MethodStep> MethodSteps { get; set; }
+        /// <summary>
+        /// The MealPlans table in the database
+        /// </summary>
         public DbSet<MealPlan> MealPlans { get; set; }
+        /// <summary>
+        /// The MealPlanEntries table in the database
+        /// </summary>
         public DbSet<MealPlanEntry> MealPlanEntries { get; set; }
 
         /// <inheritdoc/>

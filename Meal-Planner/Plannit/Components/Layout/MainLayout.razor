@@ -6,9 +6,19 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1">
-        <MudText Typo="Typo.h6">Meal Planner</MudText>
+    <MudAppBar Elevation="1" Color="Color.Primary">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="ToggleDrawer" />
+        <MudText Typo="Typo.h6">Plannit</MudText>
     </MudAppBar>
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="2" Color="Color.Primary">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">Menu</MudText>
+        </MudDrawerHeader>
+        <NavMenu />
+    </MudDrawer>
     <MudMainContent>
         <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
             @Body
@@ -17,12 +27,19 @@
 </MudLayout>
 
 @code {
+    private bool _drawerOpen = true;
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
     MudTheme _theme = new MudTheme()
     {
         PaletteLight = new PaletteLight()
         {
             Primary = "#4CAF50",
-            Secondary = "#FF9800",
+            Secondary = "#D68E22",
             Background = "#F5F5F5",
         },
         Typography = new Typography()

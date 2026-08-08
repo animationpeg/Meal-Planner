@@ -5,6 +5,7 @@ using Plannit.Components;
 using Plannit.Components.Account;
 using Plannit.Data;
 using MudBlazor.Services;
+using Plannit.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +41,9 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+
+// Services
+builder.Services.AddScoped<RecipeService>();
 
 var app = builder.Build();
 
