@@ -4,7 +4,7 @@
 
 <MudText Typo="Typo.h4" Class="mb-4">Add Recipe</MudText>
 
-<EditForm Model="_recipe" OnValidSubmit="HandleValidSubmit">
+<EditForm Model="_recipe" OnValidSubmit="HandleValidSubmit" FormName="AddRecipeForm">
     <DataAnnotationsValidator />
 
     <MudCard>
@@ -15,18 +15,22 @@
                           Label="Recipe Name"
                           For="@(() => _recipe.Name)"
                           Required="true"
+                          Variant="Variant.Outlined"
                           Class="mb-3" />
 
             <MudTextField @bind-Value="_recipe.Description"
                           Label="Description"
                           For="@(() => _recipe.Description)"
                           Lines="3"
+                          Variant="Variant.Outlined"
                           Class="mb-3" />
 
-            <MudNumericField @bind-Value="_recipe.Servings"
+            <MudNumericField T="int?"
+                            @bind-Value="_recipe.Servings"
                              Label="Servings"
                              For="@(() => _recipe.Servings)"
                              Min="1"
+                             Variant="Variant.Outlined"
                              Class="mb-3" />
         </MudCardContent>
     </MudCard>
@@ -41,13 +45,15 @@
                     <MudItem xs="4">
                         <MudTextField @bind-Value="ingredient.Name"
                                       Label="Ingredient"
-                                      Required="true" />
+                                      Required="true"
+                                      Variant="Variant.Outlined" />
                     </MudItem>
                     <MudItem xs="3">
                         <MudNumericField T="decimal?"
                                          @bind-Value="ingredient.Quantity"
                                          Label="Quantity"
-                                         Min="0.01m" />
+                                         Min="0.01m"
+                                         Variant="Variant.Outlined" />
                     </MudItem>
                     <MudItem xs="3">
                         <MudSelect @bind-Value="ingredient.Unit" Label="Unit">
@@ -60,7 +66,8 @@
                     <MudItem xs="2" Class="d-flex align-center">
                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                        Color="Color.Error"
-                                       OnClick="@(() => RemoveIngredient(ingredient))" />
+                                       OnClick="@(() => RemoveIngredient(ingredient))" 
+                                       Variant="Variant.Outlined" />
                     </MudItem>
                 </MudGrid>
             }
@@ -89,12 +96,14 @@
                         <MudTextField @bind-Value="step.Instruction"
                                       Label="@($"Step {step.StepNumber}")"
                                       Required="true"
-                                      Lines="2" />
+                                      Lines="2"
+                                      Variant="Variant.Outlined" />
                     </MudItem>
                     <MudItem xs="2" Class="d-flex align-center">
                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                        Color="Color.Error"
-                                       OnClick="@(() => RemoveStep(step))" />
+                                       OnClick="@(() => RemoveStep(step))"
+                                       Variant="Variant.Outlined" />
                     </MudItem>
                 </MudGrid>
             }
