@@ -1,0 +1,139 @@
+﻿@page "/recipes/{Id:guid}"
+@inject RecipeService RecipeService
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+
+<MudText Typo="Typo.h4" Class="mb-4">Recipe Detail</MudText>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_recipe is null)
+{
+    <MudText>Recipe not found.</MudText>
+}
+else
+{
+    <MudCard Class="mb-4">
+        <MudCardContent>
+            <MudText Typo="Typo.h5">@_recipe.Name</MudText>
+
+            @if (!string.IsNullOrWhiteSpace(_recipe.Description))
+            {
+                <MudText Typo="Typo.body1" Class="mt-2">@_recipe.Description</MudText>
+            }
+
+            @if (_recipe.Servings.HasValue)
+            {
+                <MudText Typo="Typo.body2" Class="mt-2">Serves @_recipe.Servings</MudText>
+            }
+        </MudCardContent>
+    </MudCard>
+
+    <MudCard Class="mb-4">
+        <MudCardContent>
+            <MudText Typo="Typo.h6" Class="mb-3">Ingredients</MudText>
+
+            @if (_recipe.Ingredients.Count == 0)
+            {
+                <MudText>No ingredients added.</MudText>
+            }
+            else
+            {
+                <MudList T="Ingredient">
+                    @foreach (Ingredient ingredient in _recipe.Ingredients)
+                    {
+                        <MudListItem T="Ingredient">
+                            <MudText>
+                                @FormatIngredient(ingredient)
+                            </MudText>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+        </MudCardContent>
+    </MudCard>
+
+    <MudCard Class="mb-4">
+        <MudCardContent>
+            <MudText Typo="Typo.h6" Class="mb-3">Method</MudText>
+
+            @if (_recipe.MethodSteps.Count == 0)
+            {
+                <MudText>No method steps added.</MudText>
+            }
+            else
+            {
+                @foreach (MethodStep step in _recipe.MethodSteps)
+                {
+                    <MudGrid Class="mb-3">
+                        <MudItem xs="1">
+                            <MudText Typo="Typo.h6" Color="Color.Primary">@step.StepNumber</MudText>
+                        </MudItem>
+                        <MudItem xs="11">
+                            <MudText Typo="Typo.body1">@step.Instruction</MudText>
+                        </MudItem>
+                    </MudGrid>
+                }
+            }
+        </MudCardContent>
+    </MudCard>
+
+    <MudStack Row="true" Class="mt-4">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Secondary"
+                   StartIcon="@Icons.Material.Filled.Edit"
+                   OnClick="@(() => NavigationManager.NavigateTo($"/recipes/{Id}/edit"))">
+            Edit Recipe
+        </MudButton>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Error"
+                   StartIcon="@Icons.Material.Filled.Delete"
+                   OnClick="@(async () => await DeleteRecipe())">
+            Delete Recipe
+        </MudButton>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => NavigationManager.NavigateTo("/recipes"))">
+            Back to Recipes
+        </MudButton>
+    </MudStack>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private Recipe? _recipe;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _recipe = await RecipeService.GetRecipeByIdAsync(Id);
+        _loading = false;
+    }
+
+    private string FormatIngredient(Ingredient ingredient)
+    {
+        string quantity = ingredient.Quantity.HasValue ? ingredient.Quantity.Value.ToString("G29") : string.Empty;
+        string unit = ingredient.Unit != UnitMeasurement.None ? ingredient.Unit.ToString() : string.Empty;
+        return $"{ingredient.Name} {quantity} {unit}".Trim();
+    }
+
+    private async Task DeleteRecipe()
+    {
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete Recipe",
+            "Are you sure you want to delete this recipe? This cannot be undone.",
+            yesText: "Delete",
+            cancelText: "Cancel",
+            options: new DialogOptions { MaxWidth = MaxWidth.ExtraSmall });
+
+        if (confirmed == true)
+        {
+            await RecipeService.DeleteRecipeAsync(Id);
+            NavigationManager.NavigateTo("/recipes");
+        }
+    }
+}
