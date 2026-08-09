@@ -84,7 +84,9 @@ namespace Plannit.Data
             modelBuilder.Entity<MealPlan>(entity =>
             {
                 entity.HasKey(mp => mp.Id);
+                entity.Property(mp => mp.Name).IsRequired().HasMaxLength(200);
                 entity.Property(mp => mp.WeekStarting).IsRequired();
+                entity.Property(mp => mp.DurationDays).IsRequired();
 
                 entity.HasMany(mp => mp.Entries)
                       .WithOne(e => e.MealPlan)
