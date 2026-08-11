@@ -15,7 +15,7 @@ namespace Plannit.Services
         /// <summary>
         /// Retrieve all recipes, including their Ingredients and MethodSteps
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A list of all recipes found</returns>
         public async Task<List<Recipe>> GetAllRecipesAsync()
         {
             return await _context.Recipes
@@ -28,7 +28,7 @@ namespace Plannit.Services
         /// Retrieve a single recipe by it's Id, including it's Ingredients and MethodSteps
         /// </summary>
         /// <param name="id">The unique id of the Recipe</param>
-        /// <returns></returns>
+        /// <returns>The first recipe found with the given id</returns>
         public async Task<Recipe?> GetRecipeByIdAsync(Guid id)
         {
             return await _context.Recipes
@@ -43,7 +43,6 @@ namespace Plannit.Services
         /// Add a recipe to the database
         /// </summary>
         /// <param name="recipe">The recipe entity to add</param>
-        /// <returns></returns>
         public async Task AddRecipeAsync(Recipe recipe)
         {
             RenumberSteps(recipe);
@@ -55,7 +54,6 @@ namespace Plannit.Services
         /// Update the record of a recipe already in the database
         /// </summary>
         /// <param name="recipe">The recipe entity to update</param>
-        /// <returns></returns>
         public async Task UpdateRecipeAsync(Recipe recipe)
         {
             RenumberSteps(recipe);
@@ -67,7 +65,6 @@ namespace Plannit.Services
         /// Delete a recipe record from the database by id
         /// </summary>
         /// <param name="id">The id of the recipe to be deleted</param>
-        /// <returns></returns>
         public async Task DeleteRecipeAsync(Guid id)
         {
             Recipe? recipe = await _context.Recipes.FindAsync(id);

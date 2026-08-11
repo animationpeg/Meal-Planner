@@ -87,6 +87,7 @@ namespace Plannit.Data
                 entity.Property(mp => mp.Name).IsRequired().HasMaxLength(200);
                 entity.Property(mp => mp.WeekStarting).IsRequired();
                 entity.Property(mp => mp.DurationDays).IsRequired();
+                entity.Property(mp => mp.IsActive).IsRequired();
 
                 entity.HasMany(mp => mp.Entries)
                       .WithOne(e => e.MealPlan)

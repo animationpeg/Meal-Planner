@@ -16,7 +16,7 @@ namespace Plannit.Models
         /// The user-defined name of this meal plan
         /// </summary>
         [Required]
-        [MaxLength()]
+        [MaxLength(200)]
         public string Name { get; set; } = string.Empty;
 
         /// <summary>
@@ -28,7 +28,14 @@ namespace Plannit.Models
         /// <summary>
         /// The duration of this meal plan, defaulted to 7 days
         /// </summary>
+        [Required]
         public int DurationDays { get; set; } = 7;
+
+        /// <summary>
+        /// Marker to indicate the currently active meal plan. Only one should be active at a time!
+        /// </summary>
+        [Required]
+        public bool IsActive { get; set; } = false;
 
         /// <summary>
         /// The collection of recipes
