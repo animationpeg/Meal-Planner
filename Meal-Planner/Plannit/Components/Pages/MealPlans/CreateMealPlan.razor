@@ -1,0 +1,80 @@
+﻿@page "/mealplans/create"
+@inject MealPlanService MealPlanService
+@inject NavigationManager NavigationManager
+
+<MudText Typo="Typo.h4" Class="mb-4">Create Meal Plan</MudText>
+
+<EditForm Model="_mealPlan" OnValidSubmit="HandleValidSubmit" FormName="CreateMealPlanForm">
+    <DataAnnotationsValidator />
+
+    <MudCard>
+        <MudCardContent>
+            <MudTextField @bind-Value="_mealPlan.Name"
+                          Label="Plan Name"
+                          For="@(() => _mealPlan.Name)"
+                          Required="true"
+                          Variant="Variant.Outlined"
+                          Class="mb-3" />
+
+            <MudDatePicker @bind-Date="_startDate"
+                           Label="Start Date"
+                           Variant="Variant.Outlined"
+                           Class="mb-3" />
+
+            <MudNumericField T="int"
+                             @bind-Value="_mealPlan.DurationDays"
+                             Label="Duration (days)"
+                             For="@(() => _mealPlan.DurationDays)"
+                             Min="1"
+                             Max="30"
+                             Variant="Variant.Outlined"
+                             Class="mb-3" />
+
+            <MudCheckBox @bind-Value="_mealPlan.IsActive"
+                         Label="Set as active plan" />
+        </MudCardContent>
+    </MudCard>
+
+    <MudStack Row="true" Class="mt-4">
+        <MudButton ButtonType="ButtonType.Submit"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary">
+            Create Plan
+        </MudButton>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   OnClick="@(() => NavigationManager.NavigateTo("/mealplans"))">
+            Cancel
+        </MudButton>
+    </MudStack>
+</EditForm>
+
+@code {
+    private MealPlan _mealPlan = new MealPlan
+    {
+        DurationDays = 7
+    };
+
+    private DateTime? _startDate = DateTime.Today;
+
+    protected override void OnInitialized()
+    {
+        _mealPlan.WeekStarting = DateOnly.FromDateTime(DateTime.Today);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (_startDate.HasValue)
+        {
+            _mealPlan.WeekStarting = DateOnly.FromDateTime(_startDate.Value);
+        }
+
+        if (_mealPlan.IsActive)
+        {
+            await MealPlanService.SetActivePlanAsync(_mealPlan.Id);
+        }
+
+        await MealPlanService.CreateMealPlanAsync(_mealPlan);
+        NavigationManager.NavigateTo("/mealplans");
+    }
+}

@@ -4,6 +4,7 @@
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
         Home
     </MudNavLink>
+
     <MudNavGroup Title="Recipes" Icon="@Icons.Material.Filled.MenuBook" Expanded="true">
         <MudNavLink Href="/recipes" Icon="@Icons.Material.Filled.List">
             All Recipes
@@ -12,4 +13,14 @@
             Add Recipe
         </MudNavLink>
     </MudNavGroup>
+
+    <MudNavGroup Title="Meal Plans" Icon="@Icons.Material.Filled.CalendarMonth" Expanded="true">
+        <MudNavLink Href="/mealplans" Icon="@Icons.Material.Filled.List">
+            All Plans
+        </MudNavLink>
+        <MudNavLink Href="/mealplans/create" Icon="@Icons.Material.Filled.Add">
+            Create Plan
+        </MudNavLink>
+    </MudNavGroup>
+
 </MudNavMenu>
