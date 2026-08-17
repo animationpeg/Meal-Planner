@@ -1,0 +1,96 @@
+﻿@page "/mealplans"
+@inject MealPlanService MealPlanService
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+
+<MudText Typo="Typo.h4" Class="mb-4">Meal Plans</MudText>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_mealPlans.Count == 0)
+{
+    <MudText>No meal plans found. Create one to get started!</MudText>
+}
+else
+{
+    <MudGrid>
+        @foreach (MealPlan mealPlan in _mealPlans)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Outlined="@mealPlan.IsActive">
+                    <MudCardContent>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-2">
+                            <MudText Typo="Typo.h6">@mealPlan.Name</MudText>
+                            @if (mealPlan.IsActive)
+                            {
+                                <MudChip T="string" Color="Color.Primary" Size="Size.Small">Active</MudChip>
+                            }
+                        </MudStack>
+                        <MudText Typo="Typo.body2">
+                            Starting @mealPlan.WeekStarting.ToString("dd MMM yyyy")
+                        </MudText>
+                        <MudText Typo="Typo.body2">
+                            @mealPlan.DurationDays day@(mealPlan.DurationDays == 1 ? "" : "s")
+                        </MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text"
+                                Color="Color.Primary"
+                                OnClick="@(() => NavigationManager.NavigateTo($"/mealplans/{mealPlan.Id}"))">
+                            View
+                        </MudButton>
+                        @if (!mealPlan.IsActive)
+                        {
+                            <MudButton Variant="Variant.Text"
+                                    Color="Color.Secondary"
+                                    OnClick="@(() => NavigationManager.NavigateTo($"/mealplans/{mealPlan.Id}"))">
+                                Set Active
+                            </MudButton>
+                        }
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Error"
+                                   OnClick="@(async () => await DeleteMealPlan(mealPlan.Id))">
+                            Delete
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+@code {
+    private List<MealPlan> _mealPlans = new List<MealPlan>();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _mealPlans = await MealPlanService.GetAllMealPlansAsync();
+        _loading = false;
+    }
+
+    private async Task SetActive(Guid id)
+    {
+        await MealPlanService.SetActivePlanAsync(id);
+        _mealPlans = await MealPlanService.GetAllMealPlansAsync();
+    }
+
+    private async Task DeleteMealPlan(Guid id)
+    {
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete Meal Plan",
+            "Are you sure you want to delete this meal plan? This cannot be undone.",
+            yesText: "Delete",
+            cancelText: "Cancel",
+            options: new DialogOptions { MaxWidth = MaxWidth.ExtraSmall }
+        );
+
+        if (confirmed == true)
+        {
+            await MealPlanService.DeleteMealPlanAsync(id);
+            _mealPlans = await MealPlanService.GetAllMealPlansAsync();
+        }
+    }
+}
