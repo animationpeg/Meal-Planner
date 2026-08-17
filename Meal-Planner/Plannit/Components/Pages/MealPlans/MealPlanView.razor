@@ -1,0 +1,191 @@
+﻿@page "/mealplans/{Id:guid}"
+@inject MealPlanService MealPlanService
+@inject RecipeService RecipeService
+@inject NavigationManager NavigationManager
+
+<MudText Typo="Typo.h4" Class="mb-4">@(_mealPlan?.Name ?? "Meal Plan")</MudText>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_mealPlan is null)
+{
+    <MudText>Meal plan not found.</MudText>
+}
+else
+{
+    <MudExpansionPanels MultiExpansion="true">
+        @for (int i = 0; i < _mealPlan.DurationDays; i++)
+        {
+            int day = i;
+            DateOnly date = _mealPlan.WeekStarting.AddDays(day);
+            string dayLabel = $"Day {day + 1} - {date.DayOfWeek}";
+
+            <MudExpansionPanel Text="@dayLabel">
+                @foreach (MealSlot slot in Enum.GetValues<MealSlot>())
+                {
+                    List<MealPlanEntry> slotEntries = GetEntriesForSlot(day, slot);
+
+                    <MudText Typo="Typo.subtitle1" Class="mt-3 mb-1">@slot.ToString()</MudText>
+
+                    @if (slotEntries.Count == 0)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">No recipes added</MudText>
+                    }
+                    else
+                    {
+                        <MudStack Row="true" Wrap="Wrap.Wrap">
+                            @foreach (MealPlanEntry entry in slotEntries)
+                            {
+                                <MudTooltip Text="@(entry.Recipe.Description ?? "No description available")"
+                                            Placement="Placement.Top"
+                                            Arrow="true">
+                                    <MudChip T="string"
+                                             Color="Color.Primary"
+                                             OnClose="@(async () => await RemoveEntry(entry.Id))"
+                                             CloseIcon="@Icons.Material.Filled.Close">
+                                        @entry.Recipe.Name
+                                    </MudChip>
+                                </MudTooltip>
+                            }
+                        </MudStack>
+                    }
+                }
+
+                <MudDivider Class="mt-3 mb-3" />
+
+                @if (_addingEntryDay == day)
+                {
+                    <MudGrid>
+                        <MudItem xs="12" sm="5">
+                            <MudSelect T="MealSlot"
+                                       @bind-Value="_selectedSlot"
+                                       Label="Meal Slot"
+                                       Variant="Variant.Outlined">
+                                @foreach (MealSlot slot in Enum.GetValues<MealSlot>())
+                                {
+                                    <MudSelectItem Value="slot">@slot.ToString()</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="5">
+                            <MudAutocomplete T="Recipe"
+                                             @bind-Value="_selectedRecipe"
+                                             Label="Search Recipes"
+                                             Variant="Variant.Outlined"
+                                             SearchFunc="SearchRecipes"
+                                             ToStringFunc="@(r => r?.Name ?? string.Empty)"
+                                             ResetValueOnEmptyText="true">
+                                <ItemTemplate Context="recipe">
+                                    <MudTooltip Text="@(recipe.Description ?? "No description available")"
+                                                Placement="Placement.Right"
+                                                Arrow="true">
+                                        <MudText Style="width:100%">@recipe.Name</MudText>
+                                    </MudTooltip>
+                                </ItemTemplate>
+                            </MudAutocomplete>
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Class="d-flex align-center">
+                            <MudIconButton Icon="@Icons.Material.Filled.Check"
+                                           Color="Color.Primary"
+                                           OnClick="@(async () => await ConfirmAddEntry(day))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                           Color="Color.Default"
+                                           OnClick="CancelAddEntry" />
+                        </MudItem>
+                    </MudGrid>
+                }
+                else
+                {
+                    <MudButton StartIcon="@Icons.Material.Filled.Add"
+                               Variant="Variant.Text"
+                               Color="Color.Primary"
+                               OnClick="@(() => ShowAddEntry(day))">
+                        Add Recipe
+                    </MudButton>
+                }
+            </MudExpansionPanel>
+        }
+    </MudExpansionPanels>
+
+    <MudStack Row="true" Class="mt-4">
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => NavigationManager.NavigateTo("/mealplans"))">
+            Back to Plans
+        </MudButton>
+    </MudStack>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private MealPlan? _mealPlan;
+    private List<Recipe> _allRecipes = new List<Recipe>();
+    private bool _loading = true;
+
+    private int _addingEntryDay = -1;
+    private MealSlot _selectedSlot = MealSlot.Breakfast;
+    private Recipe? _selectedRecipe;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _mealPlan = await MealPlanService.GetMealPlanByIdAsync(Id);
+        _allRecipes = await RecipeService.GetAllRecipesAsync();
+        _loading = false;
+    }
+
+    private List<MealPlanEntry> GetEntriesForSlot(int day, MealSlot slot)
+    {
+        if (_mealPlan is null)
+        {
+            return new List<MealPlanEntry>();
+        }
+
+        return _mealPlan.Entries
+            .Where(e => e.Day == day && e.MealSlot == slot)
+            .ToList();
+    }
+
+    private Task<IEnumerable<Recipe>> SearchRecipes(string searchText, CancellationToken cancellationToken)
+    {
+        IEnumerable<Recipe> results = string.IsNullOrWhiteSpace(searchText)
+            ? _allRecipes
+            : _allRecipes.Where(r => r.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(results);
+    }
+
+    private void ShowAddEntry(int day)
+    {
+        _addingEntryDay = day;
+        _selectedSlot = MealSlot.Breakfast;
+        _selectedRecipe = null;
+    }
+
+    private void CancelAddEntry()
+    {
+        _addingEntryDay = -1;
+        _selectedRecipe = null;
+    }
+
+    private async Task ConfirmAddEntry(int day)
+    {
+        if (_selectedRecipe is null)
+        {
+            return;
+        }
+
+        await MealPlanService.AddEntryAsync(Id, day, _selectedSlot, _selectedRecipe.Id);
+        _mealPlan = await MealPlanService.GetMealPlanByIdAsync(Id);
+        CancelAddEntry();
+    }
+
+    private async Task RemoveEntry(Guid entryId)
+    {
+        await MealPlanService.RemoveEntryAsync(entryId);
+        _mealPlan = await MealPlanService.GetMealPlanByIdAsync(Id);
+    }
+}
