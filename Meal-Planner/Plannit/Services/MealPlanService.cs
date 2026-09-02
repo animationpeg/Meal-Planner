@@ -8,9 +8,10 @@ namespace Plannit.Services
     /// <summary>
     /// Service for Meal Plan database operations
     /// </summary>
-    public class MealPlanService(AppDbContext context)
+    public class MealPlanService(IDbContextFactory<AppDbContext> contextFactory)
     {
-        private readonly AppDbContext _context = context;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory = contextFactory;
+
 
         #region Get Methods
         /// <summary>
@@ -19,7 +20,8 @@ namespace Plannit.Services
         /// <returns>A list of MealPlans</returns>
         public async Task<List<MealPlan>> GetAllMealPlansAsync()
         {
-            return await _context.MealPlans
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
+            return await context.MealPlans
                 .OrderByDescending(mp => mp.IsActive)
                 .ThenByDescending(mp => mp.WeekStarting)
                 .ToListAsync();
@@ -31,7 +33,8 @@ namespace Plannit.Services
         /// <returns>The first active meal plan found</returns>
         public async Task<MealPlan?> GetActiveMealPlanAsync()
         {
-            return await _context.MealPlans
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
+            return await context.MealPlans
                 .Include(mp => mp.Entries)
                 .ThenInclude(e => e.Recipe)
                 .FirstOrDefaultAsync(mp => mp.IsActive);
@@ -44,7 +47,8 @@ namespace Plannit.Services
         /// <returns>The first meal plan found matching the given id</returns>
         public async Task<MealPlan?> GetMealPlanByIdAsync(Guid id)
         {
-            return await _context.MealPlans
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
+            return await context.MealPlans
                 .Include(mp => mp.Entries)
                 .ThenInclude(e => e.Recipe)
                 .FirstOrDefaultAsync(mp => mp.Id == id);
@@ -56,7 +60,8 @@ namespace Plannit.Services
         /// <returns>The first active meal plan found</returns>
         public async Task<MealPlan?> GetActiveMealPlanWithIngredientsAsync()
         {
-            return await _context.MealPlans
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
+            return await context.MealPlans
                 .Include(mp => mp.Entries)
                 .ThenInclude(e => e.Recipe)
                 .ThenInclude(r => r.Ingredients)
@@ -72,8 +77,9 @@ namespace Plannit.Services
         /// <param name="mealPlan">The meal plan to save</param>
         public async Task CreateMealPlanAsync(MealPlan mealPlan)
         {
-            _context.MealPlans.Add(mealPlan);
-            await _context.SaveChangesAsync();
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
+            context.MealPlans.Add(mealPlan);
+            await context.SaveChangesAsync();
         }
 
         /// <summary>
@@ -82,8 +88,9 @@ namespace Plannit.Services
         /// <param name="mealPlan">The meal plan entity to update</param>
         public async Task UpdateMealPlanAsync(MealPlan mealPlan)
         {
-            _context.MealPlans.Update(mealPlan);
-            await _context.SaveChangesAsync();
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
+            context.MealPlans.Update(mealPlan);
+            await context.SaveChangesAsync();
         }
 
         /// <summary>
@@ -92,11 +99,12 @@ namespace Plannit.Services
         /// <param name="id">The Guid id of the meal plan to delete</param>
         public async Task DeleteMealPlanAsync(Guid id)
         {
-            MealPlan? mealPlan = await _context.MealPlans.FindAsync(id);
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
+            MealPlan? mealPlan = await context.MealPlans.FindAsync(id);
             if (mealPlan is not null)
             {
-                _context.MealPlans.Remove(mealPlan);
-                await _context.SaveChangesAsync();
+                context.MealPlans.Remove(mealPlan);
+                await context.SaveChangesAsync();
             }
         }
 
@@ -106,12 +114,13 @@ namespace Plannit.Services
         /// <param name="id">The meal plan id to set active</param>
         public async Task SetActivePlanAsync(Guid id)
         {
-            List<MealPlan> allPlans = await _context.MealPlans.ToListAsync();
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
+            List<MealPlan> allPlans = await context.MealPlans.ToListAsync();
             foreach (MealPlan plan in allPlans)
             {
                 plan.IsActive = plan.Id == id;
             }
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
 
         /// <summary>
@@ -123,6 +132,7 @@ namespace Plannit.Services
         /// <param name="recipeId">The recipe id to add</param>
         public async Task AddEntryAsync(Guid mealPlanId, int day, MealSlot mealSlot, Guid recipeId)
         {
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
             MealPlanEntry entry = new MealPlanEntry
             {
                 MealPlanId = mealPlanId,
@@ -130,8 +140,8 @@ namespace Plannit.Services
                 MealSlot = mealSlot,
                 RecipeId = recipeId
             };
-            _context.MealPlanEntries.Add(entry);
-            await _context.SaveChangesAsync();
+            context.MealPlanEntries.Add(entry);
+            await context.SaveChangesAsync();
         }
 
         /// <summary>
@@ -140,11 +150,12 @@ namespace Plannit.Services
         /// <param name="entryId">The entry guid id to remove</param>
         public async Task RemoveEntryAsync(Guid entryId)
         {
-            MealPlanEntry? entry = await _context.MealPlanEntries.FindAsync(entryId);
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
+            MealPlanEntry? entry = await context.MealPlanEntries.FindAsync(entryId);
             if (entry is not null)
             {
-                _context.MealPlanEntries.Remove(entry);
-                await _context.SaveChangesAsync();
+                context.MealPlanEntries.Remove(entry);
+                await context.SaveChangesAsync();
             }
         }
         #endregion

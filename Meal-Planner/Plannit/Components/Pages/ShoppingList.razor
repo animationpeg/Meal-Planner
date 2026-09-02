@@ -1,0 +1,92 @@
+﻿@page "/shoppinglist"
+@inject ShoppingListService ShoppingListService
+
+<MudText Typo="Typo.h4" Class="mb-4">Shopping List</MudText>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_noActivePlan)
+{
+    <MudText>No active meal plan found. Set a meal plan as active to generate a shopping list.</MudText>
+}
+else if (_shoppingList.Count == 0)
+{
+    <MudText>No ingredients found in the active meal plan.</MudText>
+}
+else
+{
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+        @(_shoppingList.Count(i => i.IsChecked)) of @_shoppingList.Count items checked off
+    </MudText>
+
+    <MudList T="ShoppingListItem">
+        @foreach (ShoppingListItem item in _shoppingList)
+        {
+            <MudListItem T="ShoppingListItem">
+                <MudStack Row="true" AlignItems="AlignItems.Center">
+                    <MudCheckBox @bind-Value="item.IsChecked"
+                                 Color="Color.Primary" />
+                    <MudText Style="@(item.IsChecked ? "text-decoration: line-through; opacity: 0.5;" : string.Empty)">
+                        @FormatItem(item)
+                    </MudText>
+                </MudStack>
+            </MudListItem>
+        }
+    </MudList>
+
+    <MudStack Row="true" Class="mt-4">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Refresh"
+                   OnClick="Regenerate">
+            Regenerate
+        </MudButton>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   StartIcon="@Icons.Material.Filled.Undo"
+                   OnClick="UncheckAll">
+            Uncheck All
+        </MudButton>
+    </MudStack>
+}
+
+@code {
+    private List<ShoppingListItem> _shoppingList = new List<ShoppingListItem>();
+    private bool _loading = true;
+    private bool _noActivePlan = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadShoppingList();
+    }
+
+    private async Task LoadShoppingList()
+    {
+        _loading = true;
+        _shoppingList = await ShoppingListService.GenerateShoppingListAsync();
+        _noActivePlan = _shoppingList.Count == 0;
+        _loading = false;
+    }
+
+    private async Task Regenerate()
+    {
+        await LoadShoppingList();
+    }
+
+    private void UncheckAll()
+    {
+        foreach (ShoppingListItem item in _shoppingList)
+        {
+            item.IsChecked = false;
+        }
+    }
+
+    private string FormatItem(ShoppingListItem item)
+    {
+        string quantity = item.Quantity.HasValue ? item.Quantity.Value.ToString("G29") : string.Empty;
+        string unit = item.Unit != UnitMeasurement.None ? item.Unit.ToString() : string.Empty;
+        return $"{item.Name} {quantity} {unit}".Trim();
+    }
+}

@@ -7,9 +7,9 @@ namespace Plannit.Services
     /// <summary>
     /// Service for recipe-related database queries
     /// </summary>
-    public class RecipeService(AppDbContext context)
+    public class RecipeService(IDbContextFactory<AppDbContext> contextFactory)
     {
-        private readonly AppDbContext _context = context;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory = contextFactory;
 
         #region Get Methods
         /// <summary>
@@ -18,7 +18,8 @@ namespace Plannit.Services
         /// <returns>A list of all recipes found</returns>
         public async Task<List<Recipe>> GetAllRecipesAsync()
         {
-            return await _context.Recipes
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
+            return await context.Recipes
                 .Include(r => r.Ingredients)
                 .Include(r => r.MethodSteps.OrderBy(s => s.StepNumber))
                 .ToListAsync();
@@ -31,7 +32,8 @@ namespace Plannit.Services
         /// <returns>The first recipe found with the given id</returns>
         public async Task<Recipe?> GetRecipeByIdAsync(Guid id)
         {
-            return await _context.Recipes
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
+            return await context.Recipes
                 .Include(r => r.Ingredients)
                 .Include(r => r.MethodSteps.OrderBy(s => s.StepNumber))
                 .FirstOrDefaultAsync(r => r.Id == id);
@@ -45,9 +47,21 @@ namespace Plannit.Services
         /// <param name="recipe">The recipe entity to add</param>
         public async Task AddRecipeAsync(Recipe recipe)
         {
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
+
+            foreach (Ingredient ingredient in recipe.Ingredients)
+            {
+                ingredient.RecipeId = recipe.Id;
+            }
+
+            foreach (MethodStep step in recipe.MethodSteps)
+            {
+                step.RecipeId = recipe.Id;
+            }
+
             RenumberSteps(recipe);
-            _context.Recipes.Add(recipe);
-            await _context.SaveChangesAsync();
+            context.Recipes.Add(recipe);
+            await context.SaveChangesAsync();
         }
 
         /// <summary>
@@ -56,9 +70,72 @@ namespace Plannit.Services
         /// <param name="recipe">The recipe entity to update</param>
         public async Task UpdateRecipeAsync(Recipe recipe)
         {
-            RenumberSteps(recipe);
-            _context.Recipes.Update(recipe);
-            await _context.SaveChangesAsync();
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
+
+            Recipe? existing = await context.Recipes
+                .Include(r => r.Ingredients)
+                .Include(r => r.MethodSteps)
+                .FirstOrDefaultAsync(r => r.Id == recipe.Id);
+
+            if (existing is null)
+            {
+                return;
+            }
+
+            context.Entry(existing).CurrentValues.SetValues(recipe);
+
+            foreach (Ingredient existingIngredient in existing.Ingredients.ToList())
+            {
+                if (!recipe.Ingredients.Any(i => i.Id == existingIngredient.Id))
+                {
+                    context.Ingredients.Remove(existingIngredient);
+                }
+            }
+
+            foreach (Ingredient ingredient in recipe.Ingredients)
+            {
+                Ingredient? existingIngredient = existing.Ingredients
+                    .FirstOrDefault(i => i.Id == ingredient.Id);
+
+                if (existingIngredient is null)
+                {
+                    ingredient.RecipeId = recipe.Id;
+                    existing.Ingredients.Add(ingredient);
+                    context.Entry(ingredient).State = EntityState.Added;
+                }
+                else
+                {
+                    context.Entry(existingIngredient).CurrentValues.SetValues(ingredient);
+                }
+            }
+
+            foreach (MethodStep existingStep in existing.MethodSteps.ToList())
+            {
+                if (!recipe.MethodSteps.Any(s => s.Id == existingStep.Id))
+                {
+                    context.MethodSteps.Remove(existingStep);
+                }
+            }
+
+            foreach (MethodStep step in recipe.MethodSteps)
+            {
+                MethodStep? existingStep = existing.MethodSteps
+                    .FirstOrDefault(s => s.Id == step.Id);
+
+                if (existingStep is null)
+                {
+                    step.RecipeId = recipe.Id;
+                    existing.MethodSteps.Add(step);
+                    context.Entry(step).State = EntityState.Added;
+                }
+                else
+                {
+                    context.Entry(existingStep).CurrentValues.SetValues(step);
+                }
+            }
+
+            RenumberSteps(existing);
+            await context.SaveChangesAsync();
         }
 
         /// <summary>
@@ -67,11 +144,12 @@ namespace Plannit.Services
         /// <param name="id">The id of the recipe to be deleted</param>
         public async Task DeleteRecipeAsync(Guid id)
         {
-            Recipe? recipe = await _context.Recipes.FindAsync(id);
-            if (recipe != null)
+            await using AppDbContext context = await _contextFactory.CreateDbContextAsync();
+            Recipe? recipe = await context.Recipes.FindAsync(id);
+            if (recipe is not null)
             {
-                _context.Recipes.Remove(recipe);
-                await _context.SaveChangesAsync();
+                context.Recipes.Remove(recipe);
+                await context.SaveChangesAsync();
             }
         }
 
