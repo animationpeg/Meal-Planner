@@ -26,7 +26,7 @@ namespace Plannit.Services
         }
 
         /// <summary>
-        /// Retrieve the currently active meal plan
+        /// Retrieve the active meal plan
         /// </summary>
         /// <returns>The first active meal plan found</returns>
         public async Task<MealPlan?> GetActiveMealPlanAsync()
@@ -48,6 +48,19 @@ namespace Plannit.Services
                 .Include(mp => mp.Entries)
                 .ThenInclude(e => e.Recipe)
                 .FirstOrDefaultAsync(mp => mp.Id == id);
+        }
+
+        /// <summary>
+        /// Retrieve the active meal plan and ingredients details for shopping list generation
+        /// </summary>
+        /// <returns>The first active meal plan found</returns>
+        public async Task<MealPlan?> GetActiveMealPlanWithIngredientsAsync()
+        {
+            return await _context.MealPlans
+                .Include(mp => mp.Entries)
+                .ThenInclude(e => e.Recipe)
+                .ThenInclude(r => r.Ingredients)
+                .FirstOrDefaultAsync(mp => mp.IsActive);
         }
 
         #endregion
