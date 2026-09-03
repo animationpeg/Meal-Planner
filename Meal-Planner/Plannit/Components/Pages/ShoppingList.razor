@@ -21,20 +21,33 @@ else
         @(_shoppingList.Count(i => i.IsChecked)) of @_shoppingList.Count items checked off
     </MudText>
 
-    <MudList T="ShoppingListItem">
-        @foreach (ShoppingListItem item in _shoppingList)
-        {
-            <MudListItem T="ShoppingListItem">
+    <MudDropContainer T="ShoppingListItem"
+                      Items="_shoppingList"
+                      ItemsSelector="@((item, zone) => true)"
+                      ItemDropped="OnItemDropped"
+                      Class="mud-width-full">
+        <ChildContent>
+            <MudDropZone T="ShoppingListItem"
+                         Identifier="shopping-list"
+                         AllowReorder="true"
+                         Class="mud-width-full" />
+        </ChildContent>
+        <ItemRenderer>
+            <MudPaper Elevation="1" Class="pa-2 ma-1">
                 <MudStack Row="true" AlignItems="AlignItems.Center">
-                    <MudCheckBox @bind-Value="item.IsChecked"
+                    <MudIcon Icon="@Icons.Material.Filled.DragHandle"
+                             Color="Color.Default"
+                             Class="mr-2"
+                             Style="cursor: grab;" />
+                    <MudCheckBox @bind-Value="context.IsChecked"
                                  Color="Color.Primary" />
-                    <MudText Style="@(item.IsChecked ? "text-decoration: line-through; opacity: 0.5;" : string.Empty)">
-                        @FormatItem(item)
+                    <MudText Style="@(context.IsChecked ? "text-decoration: line-through; opacity: 0.5;" : string.Empty)">
+                        @FormatItem(context)
                     </MudText>
                 </MudStack>
-            </MudListItem>
-        }
-    </MudList>
+            </MudPaper>
+        </ItemRenderer>
+    </MudDropContainer>
 
     <MudStack Row="true" Class="mt-4">
         <MudButton Variant="Variant.Filled"
@@ -80,6 +93,31 @@ else
         foreach (ShoppingListItem item in _shoppingList)
         {
             item.IsChecked = false;
+        }
+    }
+
+    private void OnItemDropped(MudItemDropInfo<ShoppingListItem> dropInfo)
+    {
+        if (dropInfo.Item is null)
+        {
+            return;
+        }
+
+        List<ShoppingListItem> ordered = _shoppingList.OrderBy(i => i.Order).ToList();
+        int oldIndex = ordered.IndexOf(dropInfo.Item);
+        int newIndex = dropInfo.IndexInZone;
+
+        if (oldIndex == newIndex)
+        {
+            return;
+        }
+
+        ordered.RemoveAt(oldIndex);
+        ordered.Insert(newIndex, dropInfo.Item);
+
+        for (int i = 0; i < ordered.Count; i++)
+        {
+            ordered[i].Order = i;
         }
     }
 

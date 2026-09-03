@@ -26,5 +26,10 @@ namespace Plannit.Models.ViewModels
         /// Whether the item is marked as purchased
         /// </summary>
         public bool IsChecked { get; set; } = false;
+
+        /// <summary>
+        /// The index of this item in the shoping list
+        /// </summary>
+        public int Order { get; set; }
     }
 }

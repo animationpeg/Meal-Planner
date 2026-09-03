@@ -34,15 +34,16 @@ namespace Plannit.Services
 
             List<ShoppingListItem> shoppingList = allIngredients
                 .GroupBy(i => new { Name = i.Name.ToLower().Trim(), i.Unit })
-                .Select(group => new ShoppingListItem
+                .Select((group, index) => new ShoppingListItem
                 {
                     Name = group.First().Name,
                     Unit = group.Key.Unit,
                     Quantity = group.Any(i => i.Quantity.HasValue)
                         ? group.Where(i => i.Quantity.HasValue).Sum(i => i.Quantity!.Value)
-                        : null
+                        : null,
+                    Order = index
                 })
-                .OrderBy(i => i.Name)
+                .OrderBy(i => i.Order)
                 .ToList();
 
             return shoppingList;
