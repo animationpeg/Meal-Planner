@@ -18,7 +18,7 @@
         /// <summary>
         /// The MealPlan entity this shopping list is generated from
         /// </summary>
-        public MealPlan? MealPlan { get; set; } = null;
+        public MealPlan MealPlan { get; set; } = null!;
 
         /// <summary>
         /// The collection of items in this shopping list

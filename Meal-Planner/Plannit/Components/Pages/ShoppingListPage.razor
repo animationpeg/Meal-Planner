@@ -11,18 +11,18 @@ else if (_noActivePlan)
 {
     <MudText>No active meal plan found. Set a meal plan as active to generate a shopping list.</MudText>
 }
-else if (_shoppingList.Count == 0)
+else if (_shoppingList is null || !_shoppingList.Items.Any())
 {
     <MudText>No ingredients found in the active meal plan.</MudText>
 }
 else
 {
     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-        @(_shoppingList.Count(i => i.IsChecked)) of @_shoppingList.Count items checked off
+        @(_shoppingList.Items.Count(i => i.IsChecked)) of @_shoppingList.Items.Count items checked off
     </MudText>
 
     <MudDropContainer T="ShoppingListItem"
-                      Items="_shoppingList"
+                      Items="_shoppingList.Items.OrderBy(i => i.Order).ToList()"
                       ItemsSelector="@((item, zone) => true)"
                       ItemDropped="OnItemDropped"
                       Class="mud-width-full">
@@ -40,7 +40,8 @@ else
                              Class="mr-2"
                              Style="cursor: grab;" />
                     <MudCheckBox @bind-Value="context.IsChecked"
-                                 Color="Color.Primary" />
+                                 Color="Color.Primary"
+                                 @bind-Value:after="@(async () => await ShoppingListService.UpdateItemCheckedAsync(context.Id, context.IsChecked))" />
                     <MudText Style="@(context.IsChecked ? "text-decoration: line-through; opacity: 0.5;" : string.Empty)">
                         @FormatItem(context)
                     </MudText>
@@ -66,7 +67,7 @@ else
 }
 
 @code {
-    private List<ShoppingListItem> _shoppingList = new List<ShoppingListItem>();
+    private ShoppingList? _shoppingList;
     private bool _loading = true;
     private bool _noActivePlan = false;
 
@@ -78,32 +79,33 @@ else
     private async Task LoadShoppingList()
     {
         _loading = true;
-        _shoppingList = await ShoppingListService.GenerateShoppingListAsync();
-        _noActivePlan = _shoppingList.Count == 0;
+        _shoppingList = await ShoppingListService.GetShoppingListForActivePlanAsync();
+
+        if (_shoppingList is null)
+        {
+            _shoppingList = await ShoppingListService.GenerateOrMergeShoppingListAsync();
+        }
+
+        _noActivePlan = _shoppingList is null || !_shoppingList.Items.Any();
         _loading = false;
     }
 
     private async Task Regenerate()
     {
-        await LoadShoppingList();
+        _loading = true;
+        _shoppingList = await ShoppingListService.GenerateOrMergeShoppingListAsync();
+        _noActivePlan = _shoppingList is null || !_shoppingList.Items.Any();
+        _loading = false;
     }
 
-    private void UncheckAll()
+    private async Task OnItemDropped(MudItemDropInfo<ShoppingListItem> dropInfo)
     {
-        foreach (ShoppingListItem item in _shoppingList)
-        {
-            item.IsChecked = false;
-        }
-    }
-
-    private void OnItemDropped(MudItemDropInfo<ShoppingListItem> dropInfo)
-    {
-        if (dropInfo.Item is null)
+        if (dropInfo.Item is null || _shoppingList is null)
         {
             return;
         }
 
-        List<ShoppingListItem> ordered = _shoppingList.OrderBy(i => i.Order).ToList();
+        List<ShoppingListItem> ordered = _shoppingList.Items.OrderBy(i => i.Order).ToList();
         int oldIndex = ordered.IndexOf(dropInfo.Item);
         int newIndex = dropInfo.IndexInZone;
 
@@ -119,6 +121,32 @@ else
         {
             ordered[i].Order = i;
         }
+
+        await ShoppingListService.ReorderItemsAsync(ordered);
+    }
+
+    private async Task OnCheckedChanged(ShoppingListItem item, bool value)
+    {
+        item.IsChecked = value;
+        await ShoppingListService.UpdateItemCheckedAsync(item.Id, value);
+        StateHasChanged();
+    }
+
+    private async Task UncheckAll()
+    {
+        if (_shoppingList is null)
+        {
+            return;
+        }
+
+        foreach (ShoppingListItem item in _shoppingList.Items)
+        {
+            await ShoppingListService.UpdateItemCheckedAsync(item.Id, false);
+        }
+
+        _shoppingList = await ShoppingListService.GetShoppingListForActivePlanAsync();
+
+        StateHasChanged();
     }
 
     private string FormatItem(ShoppingListItem item)
