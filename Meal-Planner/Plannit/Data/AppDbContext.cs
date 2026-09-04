@@ -11,7 +11,7 @@ namespace Plannit.Data
     /// </remarks>
     public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
     {
-
+        #region Database Sets
         /// <summary>
         /// The Recipes table in the database
         /// </summary>
@@ -32,7 +32,15 @@ namespace Plannit.Data
         /// The MealPlanEntries table in the database
         /// </summary>
         public DbSet<MealPlanEntry> MealPlanEntries { get; set; }
-
+        /// <summary>
+        /// The ShoppingLists table in the database
+        /// </summary>
+        public DbSet<ShoppingList> ShoppingLists { get; set; }
+        /// <summary>
+        /// The ShoppingListItems table in the database
+        /// </summary>
+        public DbSet<ShoppingListItem> ShoppingListItems { get; set; }
+        #endregion
         /// <inheritdoc/>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -110,6 +118,31 @@ namespace Plannit.Data
                       .WithMany()
                       .HasForeignKey(e => e.RecipeId)
                       .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<ShoppingList>(entity =>
+            {
+                entity.HasKey(sl => sl.Id);
+
+                entity.HasOne(sl => sl.MealPlan)
+                      .WithOne(mp => mp.ShoppingList)
+                      .HasForeignKey<ShoppingList>(sl => sl.MealPlanId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(sl => sl.Items)
+                      .WithOne(i => i.ShoppingList)
+                      .HasForeignKey(i => i.ShoppingListId)
+                      .OnDelete(DeleteBehavior.Cascade); ;
+            });
+
+            modelBuilder.Entity<ShoppingListItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.Name).IsRequired().HasMaxLength(200);
+                entity.Property(i => i.Quantity).IsRequired(false);
+                entity.Property(i => i.Unit).HasConversion<string>();
+                entity.Property(i => i.IsChecked).IsRequired();
+                entity.Property(i => i.Order).IsRequired();
             });
         }
     }

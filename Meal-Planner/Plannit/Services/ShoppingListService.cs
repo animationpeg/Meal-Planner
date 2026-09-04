@@ -1,7 +1,4 @@
 ﻿using Plannit.Models;
-using Plannit.Enums;
-using Humanizer;
-using Plannit.Models.ViewModels;
 
 namespace Plannit.Services
 {

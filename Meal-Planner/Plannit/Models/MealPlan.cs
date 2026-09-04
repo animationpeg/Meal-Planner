@@ -42,5 +42,10 @@ namespace Plannit.Models
         /// </summary>
         [Required]
         public ICollection<MealPlanEntry> Entries { get; set; } = new List<MealPlanEntry>();
+
+        /// <summary>
+        /// The generated shopping list derived from this meal plan
+        /// </summary>
+        public ShoppingList? ShoppingList { get; set; }
     }
 }
